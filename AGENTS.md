@@ -29,7 +29,7 @@ Current goal: an **MVP for a business demo**, happy path only. Bot UI and report
 | 02 | [Access control and bot shell](docs/phases/phase-02-access-control.md) | 01 | 03 | Done |
 | 03 | [Template and demo data](docs/phases/phase-03-template-and-demo-data.md) | 01 | 02, 05 | Done |
 | 04 | [Trip upload](docs/phases/phase-04-trip-upload.md) | 01, 02, 03 | 05 | Done |
-| 05 | [Clients and payments](docs/phases/phase-05-clients-and-payments.md) | 01, 02 | 03, 04 | Not started |
+| 05 | [Clients and payments](docs/phases/phase-05-clients-and-payments.md) | 01, 02 | 03, 04 | Done |
 | 06 | [Reports](docs/phases/phase-06-reports.md) | 04, 05 | — | Not started |
 | 07 | [Deployment and demo prep](docs/phases/phase-07-deployment-and-demo.md) | 01–06 | — | Not started |
 
@@ -160,3 +160,42 @@ Each phase appends a short entry here when done: what was built, deviations from
   - A re-upload shows "ЗАМЕНИТ" and the row counts stay at 10/6/51.
   - Clients go to 13, then to 15 after trip 102, with no duplicates.
   - A broken file is reported with sheet, row and column. `.pdf`, a file larger than 10 MB, a non-Excel `.xlsx`, and a View-only user all get a clear refusal.
+
+### Phase 05 — Clients and payments
+
+- Built: `services/balances.py`, the extended `services/clients.py`, `services/payments.py`, `bot/client_picker.py`, `handlers/payments.py` (`/pay`, `/payments`) and `handlers/clients.py` (`/clients`). FSM groups `ClientPickerStates`, `PaymentStates` and `ClientStates` are in `bot/states.py`.
+- **Balances:**
+  - `client_balance(session, client_id, as_of=None) -> int`.
+  - `all_balances(session)` returns `ClientBalance` rows, ordered by name.
+  - `balances_for(session, ids) -> dict` and `get_client_balance(session, id)`.
+  - `ClientBalance.balance` is a property (`shipped − paid`). Deleted payments are excluded.
+- **Client picker** (Phase 06 will reuse it):
+  ```python
+  from sheepbot.bot import client_picker
+
+
+  async def on_picked(callback, state, session, user, client) -> None:
+      # FSM is still in ClientPickerStates.query: set your next state or clear it.
+      # Do NOT call callback.answer(); the picker does that.
+      ...
+
+
+  client_picker.register("report_statement", on_picked)  # once, at module level
+  await client_picker.start(message, state, "report_statement")  # optional keyboard=...
+  ```
+  - The picker edits the matches message to "Клиент: X" before calling your handler.
+  - Its router (`client_picker.router`) only requires that the user has some permission (`IsAllowed`), so View-only users can use it from reports.
+  - Callback factory `ClientCb` (prefix `cli`) is shared by the picker and the `/clients` screens.
+- **Dialog conventions** (new in `bot/filters.py`):
+  - Use `DialogText` for free-text steps. It excludes commands and menu-button texts, so those always reach their own handlers.
+  - Every menu-button or command entry handler calls `state.clear()`. The fallback also clears the state on menu buttons.
+  - Dialogs show `cancel_keyboard()` and restore `main_menu(user)` at the end.
+- `payments.format_balance(b)` / `balance_value(b)` format debt and overpayment ("Переплата"). `/clients` imports them; reports can too.
+- Router order is common → users → template → upload → payments → clients → client_picker → fallback. Add the reports router before `client_picker.router`.
+- `/payments` shows one list message with "Удалить N" buttons (4 per row) instead of one message per payment. The list isn't refreshed after a deletion; a second press on a deleted entry says "Действие устарело".
+- Verified offline (fake updates):
+  - A payment lowers the balance by exactly its amount, and the card shows before → after (overpayment shows as "переплата …").
+  - `abc`, `0`, a future date and a bad date are rejected. `/cancel` and menu buttons leave the dialog.
+  - Deleting a payment restores the balance.
+  - Clients: find, add (duplicate rejected), rename (duplicate rejected), list paging, "Внести оплату" from the card.
+  - A View-only user is refused `/pay`, `/payments` and `/clients`.

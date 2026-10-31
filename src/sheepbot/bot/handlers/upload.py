@@ -6,6 +6,7 @@ from html import escape
 
 from aiogram import Bot, F, Router
 from aiogram.filters.callback_data import CallbackData
+from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -120,7 +121,8 @@ async def _close_preview(callback: CallbackQuery) -> None:
 
 
 @router.message(F.text == texts.BTN_UPLOAD)
-async def ask_for_file(message: Message) -> None:
+async def ask_for_file(message: Message, state: FSMContext) -> None:
+    await state.clear()
     await message.answer(texts.UPLOAD_PROMPT)
 
 

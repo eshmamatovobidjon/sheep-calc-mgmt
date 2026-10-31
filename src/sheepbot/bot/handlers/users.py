@@ -8,6 +8,7 @@ from aiogram import Bot, F, Router
 from aiogram.exceptions import TelegramAPIError
 from aiogram.filters import Command
 from aiogram.filters.callback_data import CallbackData
+from aiogram.fsm.context import FSMContext
 from aiogram.types import (
     CallbackQuery,
     InlineKeyboardButton,
@@ -244,7 +245,8 @@ async def on_request_decision(
 
 @router.message(Command("users"))
 @router.message(F.text == texts.BTN_USERS)
-async def cmd_users(message: Message, session: AsyncSession) -> None:
+async def cmd_users(message: Message, session: AsyncSession, state: FSMContext) -> None:
+    await state.clear()
     text, markup = await users_list_view(session)
     await message.answer(text, reply_markup=markup)
 

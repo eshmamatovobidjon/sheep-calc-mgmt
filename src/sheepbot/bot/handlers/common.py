@@ -91,12 +91,14 @@ async def on_error(event: ErrorEvent) -> bool:
 
 
 @fallback_router.message()
-async def fallback_message(message: Message, user: BotUser | None) -> None:
+async def fallback_message(message: Message, user: BotUser | None, state: FSMContext) -> None:
     if not users.is_allowed(user):
         await _answer_denied(message, user)
         return
 
     item = find_menu_item(message.text or "")
+    if item is not None:
+        await state.clear()  # a menu button leaves any open dialog
     if message.document is not None:
         text = texts.NO_ACCESS  # the upload router handles documents from Upload users
     elif item is None:

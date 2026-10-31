@@ -4,6 +4,7 @@ from functools import cache
 
 from aiogram import F, Router
 from aiogram.filters import Command
+from aiogram.fsm.context import FSMContext
 from aiogram.types import BufferedInputFile, Message
 
 from sheepbot.bot import texts
@@ -22,6 +23,7 @@ def _blank_template() -> bytes:
 
 @router.message(Command("template"))
 @router.message(F.text == texts.BTN_TEMPLATE)
-async def cmd_template(message: Message) -> None:
+async def cmd_template(message: Message, state: FSMContext) -> None:
+    await state.clear()
     document = BufferedInputFile(_blank_template(), filename=TEMPLATE_FILE_NAME)
     await message.answer_document(document, caption=texts.TEMPLATE_CAPTION)
