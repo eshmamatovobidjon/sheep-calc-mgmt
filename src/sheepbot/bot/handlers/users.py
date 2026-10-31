@@ -189,9 +189,13 @@ async def notify_admin_about_request(bot: Bot, user: BotUser) -> None:
     )
 
 
-async def _notify_granted(bot: Bot, user: BotUser) -> None:
+async def notify_granted(bot: Bot, user: BotUser) -> None:
     text = texts.ACCESS_GRANTED.format(perms=_perms_text(user.can_upload, user.can_view))
     await _send(bot, user.telegram_id, text, reply_markup=main_menu(user))
+
+
+async def notify_closed(bot: Bot, user: BotUser) -> None:
+    await _send(bot, user.telegram_id, texts.ACCESS_CLOSED, ReplyKeyboardRemove())
 
 
 async def _edit(
@@ -230,14 +234,14 @@ async def on_request_decision(
         await users.set_permissions(session, target.id, can_upload=False, can_view=False)
         await users.set_status(session, target.id, UserStatus.BLOCKED)
         result = texts.REQUEST_REJECTED
-        await _send(bot, target.telegram_id, texts.ACCESS_CLOSED, ReplyKeyboardRemove())
+        await notify_closed(bot, target)
     else:
         can_upload = action in (UserAction.GRANT_UPLOAD, UserAction.GRANT_BOTH)
         can_view = action in (UserAction.GRANT_VIEW, UserAction.GRANT_BOTH)
         await users.set_permissions(session, target.id, can_upload=can_upload, can_view=can_view)
         await users.set_status(session, target.id, UserStatus.ACTIVE)
         result = texts.REQUEST_GRANTED.format(perms=_perms_text(can_upload, can_view))
-        await _notify_granted(bot, target)
+        await notify_granted(bot, target)
 
     await _edit(callback, f"{request_card_text(target)}\n\n{result}", reply_markup=None)
     await callback.answer()
@@ -289,7 +293,7 @@ async def on_user_change(
         # Granting a permission to a pending user approves their request.
         if target.status == UserStatus.PENDING and (can_upload or can_view):
             await users.set_status(session, target.id, UserStatus.ACTIVE)
-            await _notify_granted(bot, target)
+            await notify_granted(bot, target)
 
     await _edit(callback, user_card_text(target), user_card_keyboard(target))
     await callback.answer()

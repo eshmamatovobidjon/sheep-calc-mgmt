@@ -76,3 +76,5 @@ def require(perm: Perm):
 
 
 UploadUser = Annotated[BotUser, Depends(require(Perm.UPLOAD))]
+ViewUser = Annotated[BotUser, Depends(require(Perm.VIEW))]
+AdminUser = Annotated[BotUser, Depends(require(Perm.ADMIN))]

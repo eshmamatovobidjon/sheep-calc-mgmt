@@ -10,7 +10,8 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from sheepbot.api import texts
-from sheepbot.api.routers import clients, health, me, payments
+from sheepbot.api.routers import clients, health, me, payments, reports, trips, users
+from sheepbot.api.telegram import get_bot
 from sheepbot.config import get_settings
 from sheepbot.db.session import get_engine
 
@@ -29,6 +30,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
             settings.dev_auth_telegram_id,
         )
     yield
+    if get_bot.cache_info().currsize:
+        await get_bot().session.close()
     await get_engine().dispose()
 
 
@@ -103,6 +106,9 @@ def create_app() -> FastAPI:
     app.include_router(me.router, prefix=API_PREFIX, tags=["me"])
     app.include_router(clients.router, prefix=API_PREFIX, tags=["clients"])
     app.include_router(payments.router, prefix=API_PREFIX, tags=["payments"])
+    app.include_router(trips.router, prefix=API_PREFIX, tags=["trips"])
+    app.include_router(reports.router, prefix=API_PREFIX, tags=["reports"])
+    app.include_router(users.router, prefix=API_PREFIX, tags=["users"])
     _mount_frontend(app, get_settings().web_dist_dir)
     return app
 

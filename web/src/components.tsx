@@ -100,7 +100,9 @@ export function BackLink({ fallback = '/clients' }: { fallback?: string }) {
 
 const NAV_ITEMS: { to: string; label: string; permissions: Permission[] }[] = [
   { to: '/clients', label: t.navClients, permissions: ['upload', 'view'] },
+  { to: '/trips', label: t.navTrips, permissions: ['upload', 'view'] },
   { to: '/payments', label: t.navPayments, permissions: ['upload'] },
+  { to: '/more', label: t.navMore, permissions: ['upload', 'view'] },
 ]
 
 export function BottomNav({ permissions }: { permissions: Permission[] }) {

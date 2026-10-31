@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Status | Not started |
+| Status | Done |
 | Depends on | 11 |
 | Unblocks | 13; Release A |
 | Read first | [Roadmap](../mini-app-plan.md), [target architecture](../mini-app-architecture.md) sections 4, 10 |
@@ -46,11 +46,11 @@ Report scheduling, sending reports to customers, debt aging, audit view, report 
 
 ## Done When
 
-- [ ] All report types work as screens and as PDF/XLSX with matching figures.
-- [ ] User administration works from the app and agrees with the bot.
-- [ ] Manual checks and the walkthrough pass.
-- [ ] Ruff plus frontend lint/typecheck/build pass.
+- [x] All report types work as screens and as PDF/XLSX with matching figures.
+- [x] User administration works from the app and agrees with the bot. (Same services and transitions; checked through the API and the Users screen.)
+- [x] Manual checks and the walkthrough pass. (Walkthrough steps covered individually in the browser and API; a full run in real Telegram by the owner is still recommended.)
+- [x] Ruff plus frontend lint/typecheck/build pass.
 
 ## Handoff
 
-Record the report/user endpoints, how files are delivered on each device checked, and walkthrough findings.
+Done 2026-10-31; details in the AGENTS.md Phase 12 note and architecture sections 9a/9b.

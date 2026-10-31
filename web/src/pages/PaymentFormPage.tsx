@@ -2,50 +2,11 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { api, type ClientDetail, errorDetails, type PaymentResult } from '../api'
+import { ClientPicker } from '../ClientPicker'
 import { BackLink, Balance, ErrorState, Field, Loading } from '../components'
 import { balanceAfterPayment, digitsOnly, formatAmount, formatDate, formatUzs, todayIso } from '../format'
 import { useInvalidateMoney, useSingleFlight } from '../hooks'
 import { t } from '../texts'
-
-function ClientPicker({ onPick }: { onPick: (id: number) => void }) {
-  const [query, setQuery] = useState('')
-  const q = query.trim()
-  const matches = useQuery({
-    queryKey: ['clients', q, 'all', 'picker'],
-    queryFn: () => api.clients({ q, filter: 'all', offset: 0, limit: 10 }),
-    enabled: q.length >= 2,
-  })
-  return (
-    <div className="card form">
-      <h1>{t.newPaymentTitle}</h1>
-      <Field label={t.chooseClient} hint={t.chooseClientHint}>
-        <input
-          className="input"
-          type="search"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          autoFocus
-        />
-      </Field>
-      {matches.data && (
-        <ul className="list picker">
-          {matches.data.items.length === 0 ? (
-            <li className="muted state">{t.noMatches}</li>
-          ) : (
-            matches.data.items.map((client) => (
-              <li key={client.id}>
-                <button type="button" className="row" onClick={() => onPick(client.id)}>
-                  <span className="row-title">{client.name}</span>
-                  <Balance value={client.balance} />
-                </button>
-              </li>
-            ))
-          )}
-        </ul>
-      )}
-    </div>
-  )
-}
 
 function PaymentDone({ result }: { result: PaymentResult }) {
   return (
@@ -251,7 +212,10 @@ export function PaymentFormPage() {
     <>
       <BackLink fallback="/payments" />
       {clientId === null ? (
-        <ClientPicker onPick={pick} />
+        <div className="card form">
+          <h1>{t.newPaymentTitle}</h1>
+          <ClientPicker onPick={pick} autoFocus />
+        </div>
       ) : client.isPending ? (
         <Loading />
       ) : client.isError ? (

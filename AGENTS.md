@@ -13,7 +13,7 @@ A Telegram bot for a sheep-meat trading business:
 
 Current goal: an **MVP for a business demo**, happy path only. Bot UI and reports are in **Russian**.
 
-Next requested delivery track: a Telegram Mini App in this repository plus PostgreSQL, planned in phases 08-15 and sized for a small team (about 10-30 users). Phases 08 (PostgreSQL + Alembic), 09 (API + Telegram auth), 10 (Mini App shell) and 11 (clients and payments) are done; 12-15 are not implemented yet. Keep existing bot workflows working and distinguish current contracts from planned changes.
+Next requested delivery track: a Telegram Mini App in this repository plus PostgreSQL, planned in phases 08-15 and sized for a small team (about 10-30 users). Phases 08 (PostgreSQL + Alembic), 09 (API + Telegram auth), 10 (Mini App shell), 11 (clients and payments) and 12 (reports and users) are done; 13-15 are not implemented yet. Keep existing bot workflows working and distinguish current contracts from planned changes.
 
 ## Documents
 
@@ -40,7 +40,7 @@ Next requested delivery track: a Telegram Mini App in this repository plus Postg
 | 09 | [API and Telegram authentication](docs/phases/phase-09-api-and-auth.md) | 08 | - | Done |
 | 10 | [Mini App shell and client list](docs/phases/phase-10-mini-app-shell.md) | 09 | - | Done |
 | 11 | [Mini App clients and payments](docs/phases/phase-11-mini-app-clients-payments.md) | 10 | - | Done |
-| 12 | [Reports and users](docs/phases/phase-12-mini-app-reports-users.md) | 11 | - | Not started |
+| 12 | [Reports and users](docs/phases/phase-12-mini-app-reports-users.md) | 11 | - | Done |
 | 13 | [Trip entry form](docs/phases/phase-13-trip-workspace.md) | 12 | - | Not started |
 | 14 | [Trip editing and Excel in the Mini App](docs/phases/phase-14-trip-publishing-excel.md) | 13 | - | Not started |
 | 15 | [Server deployment](docs/phases/phase-15-mini-app-rollout.md) | 14 | - | Deferred |
@@ -286,3 +286,10 @@ Each phase appends a short entry here when done: what was built, deviations from
 - Deviations: no cancellation reason (simplified plan); payment edit = delete + re-enter; the confirmation's "balance after" uses `BigInt` (exact) and the result screen shows the server balance.
 - Verified (dev-auth API + browser at 390 px, Docker API with signed initData): create/duplicate (case/space)/rename/rename-to-existing/clear phone; invalid amounts, future date, bad method, long note, unknown client, unknown field; overpayment shown as "Переплата"; two separate equal payments both recorded; delete restores balance once, second delete → 404; ledger all-time closing = balance and period opening + shipped − paid = closing; View-only user: ledger 200, every write and the payment list 403. Test rows were removed afterwards (demo back to 15 clients / 15 payments).
 - Not verified here: the new screens inside real Telegram (same build as the verified Phase 10 launch; the owner can click through via the tunnel).
+
+### Phase 12 — Reports and users
+
+- Built: API routers `trips.py`, `reports.py` (debtors + report files + send-to-chat), `users.py`; `reports/files.py` (statement/trip/debtors → `ReportFile`); `api/telegram.py` send-only bot client; `ViewUser`/`AdminUser` dependencies; `services/trips.py` `trip_id_by_number`, `count_trips`, `offset` in `list_recent_trips`; bot `handlers/users.py` now exports `notify_granted`/`notify_closed` (used by bot and API). Web: `pages/{Trips,Trip,Debtors,Reports,Users,More}Page.tsx`, shared `ClientPicker.tsx`, `formatPercent`/`formatRate`/month helpers. Contracts: architecture 9a/9b.
+- Permissions: trips and debtors for any permission (Upload users need them for daily work; the bot's `/trips` stays View-only); report files need View; users need admin.
+- Verified: trip list/summary equal the Phase 03 table (101: cost 1 868 413 480, revenue 1 990 946 550, 6,6 %; 102: 8,5 %); debtors debt − credit = net; all three reports as PDF and XLSX with correct type, Cyrillic file name and `no-store`; send-to-chat delivered two test files to the admin's chat; bad range/format and missing client/trip handled; user transitions (approve by double tap → one change, toggle, block with confirmation, unblock, reject, admin protected, failed notifications to fake IDs only logged); Docker API matrix with signed initData: Upload-only 403 on report files and users, View-only 403 on users. UI checked at 390 px. Probe users removed.
+- Not verified: the browser "Скачать" save dialog (the integrated browser doesn't expose downloads; the request returns 200) and the Phase 11/12 screens inside real Telegram.

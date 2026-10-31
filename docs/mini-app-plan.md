@@ -85,7 +85,7 @@ Each phase has a brief under `docs/phases/`. Phase numbers continue the original
 | 09 | [API and Telegram authentication](phases/phase-09-api-and-auth.md) | 08 | Done |
 | 10 | [Mini App shell and client list](phases/phase-10-mini-app-shell.md) | 09 | Done |
 | 11 | [Clients and payments](phases/phase-11-mini-app-clients-payments.md) | 10 | Done |
-| 12 | [Reports and users](phases/phase-12-mini-app-reports-users.md) | 11 | Not started |
+| 12 | [Reports and users](phases/phase-12-mini-app-reports-users.md) | 11 | Done |
 | 13 | [Trip entry form](phases/phase-13-trip-workspace.md) | 12 | Not started |
 | 14 | [Trip editing and Excel in the Mini App](phases/phase-14-trip-publishing-excel.md) | 13 | Not started |
 | 15 | [Server deployment](phases/phase-15-mini-app-rollout.md) | 14 (or 12 for an early pilot) | Deferred |
@@ -166,4 +166,4 @@ Multi-company tenancy, customer portal, app-store app, offline writes, live co-e
 
 ## 10. Next Action
 
-Start [Phase 12](phases/phase-12-mini-app-reports-users.md).
+Start [Phase 13](phases/phase-13-trip-workspace.md).

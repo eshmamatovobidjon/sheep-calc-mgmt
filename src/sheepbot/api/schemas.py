@@ -6,7 +6,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from sheepbot.api import texts
-from sheepbot.domain.enums import PaymentMethod
+from sheepbot.domain.enums import PaymentMethod, UserStatus
 from sheepbot.domain.formatting import today
 
 CLIENT_NAME_MIN, CLIENT_NAME_MAX = 2, 100
@@ -180,3 +180,107 @@ class PaymentResultOut(BaseModel):
 
     payment: PaymentOut
     balance: str
+
+
+class TripListItemOut(BaseModel):
+    number: int
+    departure_date: date
+    purchased_heads: int
+    revenue: str
+    cost: str
+    profit: str
+    margin_pct: str | None  # profit / cost * 100
+
+
+class TripPageOut(BaseModel):
+    items: list[TripListItemOut]
+    total: int
+
+
+class TripPurchaseRowOut(BaseModel):
+    type_label: str
+    heads: int
+    net_kg: str
+    amount_kzt: str
+    amount_uzs: str
+
+
+class TripProductRowOut(BaseModel):
+    product_name: str
+    heads: int
+    net_kg: str
+    avg_price_uzs: str
+    amount_uzs: str
+
+
+class TripClientRowOut(BaseModel):
+    client_name: str
+    heads: int
+    net_kg: str
+    amount_uzs: str
+
+
+class TripEconomicsRowOut(BaseModel):
+    type_label: str
+    purchased_heads: int
+    sold_heads: int
+    cost_per_kg: str | None
+    avg_sale_price: str | None
+    diff_per_kg: str | None
+
+
+class TripSummaryOut(BaseModel):
+    number: int
+    departure_date: date
+    arrival_date: date | None
+    rate_kzt: str
+    rate_usd: str
+    note: str | None
+    purchases: list[TripPurchaseRowOut]
+    purchase_total: TripPurchaseRowOut
+    expenses_uzs: str
+    sales_by_product: list[TripProductRowOut]
+    sales_by_client: list[TripClientRowOut]
+    economics: list[TripEconomicsRowOut]
+    revenue: str
+    cost: str
+    profit: str
+    margin_pct: str | None
+
+
+class DebtorOut(BaseModel):
+    client_id: int
+    name: str
+    balance: str
+    last_sale_date: date | None
+    last_payment_date: date | None
+
+
+class DebtorsOut(BaseModel):
+    rows: list[DebtorOut]
+    total_debt: str
+    total_credit: str
+    net: str
+
+
+class ReportSentOut(BaseModel):
+    filename: str
+
+
+class UserOut(BaseModel):
+    id: int
+    telegram_id: int
+    full_name: str
+    username: str | None
+    status: str
+    status_label: str
+    can_upload: bool
+    can_view: bool
+
+
+class UserUpdateIn(InputModel):
+    """Only the fields sent are changed."""
+
+    can_upload: bool | None = None
+    can_view: bool | None = None
+    status: UserStatus | None = None

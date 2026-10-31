@@ -6,7 +6,7 @@ Telegram bot for a sheep-meat trading business: trip uploads from an Excel templ
 
 The [Mini App and PostgreSQL roadmap](docs/mini-app-plan.md) defines phases 08-15: PostgreSQL, an authenticated API, client/payment screens, reports and user admin, trip entry and editing in the app, and server deployment. It is sized for a small team. The [target architecture](docs/mini-app-architecture.md) records the implementation contracts.
 
-Phases 08 (PostgreSQL + Alembic), 09 (API + Telegram auth) and 10 (Mini App shell + client list) are done; the remaining phases are planned. Next is [Phase 11](docs/phases/phase-11-mini-app-clients-payments.md).
+Phases 08-12 are done (PostgreSQL, API with Telegram login, Mini App with clients, payments, trips, reports and user admin); trip entry in the app (13-14) and server deployment (15) are planned. Next is [Phase 13](docs/phases/phase-13-trip-workspace.md).
 
 ## Run locally
 

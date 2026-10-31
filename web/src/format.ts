@@ -39,6 +39,36 @@ export function balanceAfterPayment(balance: string, amount: string): string {
   return (BigInt(balance) - BigInt(amount)).toString()
 }
 
+function isoDate(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+/** First day of this month .. today, in the device time zone. */
+export function thisMonth(): [string, string] {
+  const now = new Date()
+  return [isoDate(new Date(now.getFullYear(), now.getMonth(), 1)), isoDate(now)]
+}
+
+/** First .. last day of the previous month. */
+export function lastMonth(): [string, string] {
+  const now = new Date()
+  return [
+    isoDate(new Date(now.getFullYear(), now.getMonth() - 1, 1)),
+    isoDate(new Date(now.getFullYear(), now.getMonth(), 0)),
+  ]
+}
+
+/** "6.6" -> "6,6 %"; "—" when cost is zero. */
+export function formatPercent(value: string | null): string {
+  return value === null ? '—' : `${formatAmount(value)}\u00a0%`
+}
+
+/** Exchange rate without trailing zeros: "26.8000" -> "26,8", "11900.0000" -> "11 900". */
+export function formatRate(value: string): string {
+  return formatAmount(value.includes('.') ? value.replace(/\.?0+$/, '') : value)
+}
+
 export type BalanceKind = 'debt' | 'credit' | 'zero'
 
 export function balanceKind(balance: string): BalanceKind {

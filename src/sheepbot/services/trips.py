@@ -6,7 +6,7 @@ from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -303,11 +303,22 @@ async def get_trip(session: AsyncSession, trip_id: int) -> Trip | None:
     return await session.scalar(stmt)
 
 
-async def list_recent_trips(session: AsyncSession, limit: int = 10) -> list[TripOverview]:
+async def trip_id_by_number(session: AsyncSession, number: int) -> int | None:
+    return await session.scalar(select(Trip.id).where(Trip.number == number))
+
+
+async def count_trips(session: AsyncSession) -> int:
+    return await session.scalar(select(func.count()).select_from(Trip)) or 0
+
+
+async def list_recent_trips(
+    session: AsyncSession, limit: int = 10, offset: int = 0
+) -> list[TripOverview]:
     stmt = (
         select(Trip)
         .options(*_trip_load_options())
         .order_by(Trip.departure_date.desc(), Trip.number.desc())
+        .offset(offset)
         .limit(limit)
     )
     rows = await session.scalars(stmt)
