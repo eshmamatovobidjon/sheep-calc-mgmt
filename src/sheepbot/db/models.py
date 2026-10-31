@@ -176,7 +176,7 @@ class Sale(IdMixin, TimestampMixin, Base):
 
 class Payment(IdMixin, TimestampMixin, Base):
     __tablename__ = "payment"
-    __table_args__ = (CheckConstraint("amount_uzs > 0", name="ck_payment_amount_positive"),)
+    __table_args__ = (CheckConstraint("amount_uzs > 0", name="amount_positive"),)
 
     client_id: Mapped[int] = mapped_column(ForeignKey("client.id"), index=True)
     date: Mapped[dt.date] = mapped_column(Date)

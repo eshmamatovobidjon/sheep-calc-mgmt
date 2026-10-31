@@ -9,6 +9,10 @@
 
 The bot runs on a server, is loaded with realistic demo data, and a walkthrough for the business demo is ready.
 
+## Relationship to the Mini App Track
+
+This unfinished brief remains the legacy bot-only deployment option. It is not a prerequisite for [phases 08-15](../mini-app-plan.md): demo loading moves into [Phase 08](phase-08-postgresql.md), bot profile/launch into [Phase 10](phase-10-mini-app-shell.md), and production deployment/walkthrough into [Phase 15](phase-15-mini-app-rollout.md). Do not implement this SQLite reset procedure against PostgreSQL or mark Phase 07 complete merely because its tasks were planned elsewhere.
+
 ## Starting point
 
 All features (phases 01–06) work locally.

@@ -3,8 +3,9 @@ import logging
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.exceptions import TelegramAPIError
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import BotCommand
+from aiogram.types import BotCommand, MenuButtonDefault, MenuButtonWebApp, WebAppInfo
 
 from sheepbot.bot import texts
 from sheepbot.bot.handlers import ROUTERS
@@ -38,6 +39,25 @@ async def set_commands(bot: Bot) -> None:
     )
 
 
+async def set_profile(bot: Bot) -> None:
+    """Russian description and the chat menu button (opens the Mini App if MINI_APP_URL set)."""
+    url = get_settings().mini_app_url
+    if url and not url.startswith("https://"):
+        logger.warning("MINI_APP_URL must start with https://; Mini App button not set")
+        url = ""
+    menu_button = (
+        MenuButtonWebApp(text=texts.MINI_APP_BUTTON, web_app=WebAppInfo(url=url))
+        if url
+        else MenuButtonDefault()
+    )
+    try:
+        await bot.set_my_description(texts.BOT_DESCRIPTION)
+        await bot.set_my_short_description(texts.BOT_SHORT_DESCRIPTION)
+        await bot.set_chat_menu_button(menu_button=menu_button)
+    except TelegramAPIError as e:
+        logger.warning("Could not update bot profile: %s", e)
+
+
 async def main() -> None:
     settings = get_settings()
     await prepare_db()
@@ -45,6 +65,7 @@ async def main() -> None:
     bot = Bot(settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = build_dispatcher()
     await set_commands(bot)
+    await set_profile(bot)
 
     logger.info("Starting polling")
     try:

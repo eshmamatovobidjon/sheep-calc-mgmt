@@ -81,3 +81,10 @@ async def rename_client(session: AsyncSession, client_id: int, new_name: str) ->
     client.name_key = name_key
     await session.flush()
     return client
+
+
+async def set_phone(session: AsyncSession, client_id: int, phone: str | None) -> Client:
+    client = await session.get_one(Client, client_id)
+    client.phone = " ".join(phone.split()) if phone and phone.strip() else None
+    await session.flush()
+    return client

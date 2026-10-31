@@ -10,8 +10,11 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "aiogram>=3",
+    "fastapi",
+    "uvicorn",
     "SQLAlchemy[asyncio]>=2",
-    "aiosqlite",
+    "asyncpg",
+    "alembic",
     "pydantic-settings",
     "openpyxl",
     "reportlab",

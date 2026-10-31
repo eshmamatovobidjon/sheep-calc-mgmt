@@ -1,0 +1,500 @@
+/* Telegram injects --tg-theme-* variables; the fallbacks cover an ordinary browser. */
+:root {
+  --bg: var(--tg-theme-bg-color, #ffffff);
+  --bg-secondary: var(--tg-theme-secondary-bg-color, #f1f2f5);
+  --text: var(--tg-theme-text-color, #111111);
+  --hint: var(--tg-theme-hint-color, #6b7280);
+  --link: var(--tg-theme-link-color, #2563eb);
+  --button: var(--tg-theme-button-color, #2563eb);
+  --button-text: var(--tg-theme-button-text-color, #ffffff);
+  --separator: var(--tg-theme-section-separator-color, #e3e5ea);
+  --debt: #c62828;
+  --credit: #2e7d32;
+  --nav-height: 56px;
+
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif;
+  font-size: 16px;
+  line-height: 1.4;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: var(--tg-theme-bg-color, #17212b);
+    --bg-secondary: var(--tg-theme-secondary-bg-color, #0e1621);
+    --text: var(--tg-theme-text-color, #f5f5f5);
+    --hint: var(--tg-theme-hint-color, #8a96a3);
+    --link: var(--tg-theme-link-color, #6ab3f3);
+    --button: var(--tg-theme-button-color, #5288c1);
+    --separator: var(--tg-theme-section-separator-color, #2b3540);
+    --debt: #ef6b6b;
+    --credit: #6fcf73;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-secondary);
+}
+
+h1 {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+  overflow-wrap: anywhere;
+}
+
+a {
+  color: var(--link);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 0 1rem;
+}
+
+.page.with-nav {
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 1rem);
+}
+
+.page-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.75rem 1rem 0.5rem;
+  background: var(--bg);
+  border-bottom: 1px solid var(--separator);
+}
+
+.search {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.chip {
+  flex: none;
+  min-height: 36px;
+  padding: 0.25rem 0.85rem;
+  border: 1px solid var(--separator);
+  border-radius: 18px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+  background: var(--button);
+  border-color: var(--button);
+  color: var(--button-text);
+}
+
+.state {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--hint);
+}
+
+.state h1 {
+  color: var(--text);
+}
+
+.muted {
+  color: var(--hint);
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+.count {
+  margin: 0.75rem 1rem 0.25rem;
+  font-size: 0.85rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-height: 56px;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--separator);
+  color: inherit;
+  text-decoration: none;
+}
+
+.row-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.row-title {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.balance {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: none;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.balance-label {
+  font-size: 0.8rem;
+}
+
+.balance-amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.balance-debt {
+  color: var(--debt);
+}
+
+.balance-credit {
+  color: var(--credit);
+}
+
+.balance-zero {
+  color: var(--hint);
+}
+
+.button {
+  min-height: 44px;
+  padding: 0.5rem 1.25rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--button);
+  color: var(--button-text);
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.6;
+}
+
+.button.wide {
+  display: block;
+  width: calc(100% - 2rem);
+  margin: 1rem auto 0;
+}
+
+.back {
+  min-height: 44px;
+  margin: 0.5rem 0.5rem 0;
+  padding: 0.5rem;
+  border: 0;
+  background: none;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.card {
+  margin: 0.75rem 0;
+  padding: 1rem;
+  background: var(--bg);
+}
+
+.balance-big {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 1rem 0;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--separator);
+  border-bottom: 1px solid var(--separator);
+}
+
+.balance-big .balance-amount {
+  font-size: 1.35rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.5rem 1rem;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--hint);
+}
+
+.facts dd {
+  margin: 0;
+  text-align: right;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.bottom-nav {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: center;
+  height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bg);
+  border-top: 1px solid var(--separator);
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex: 1;
+  max-width: 200px;
+  align-items: center;
+  justify-content: center;
+  color: var(--hint);
+  text-decoration: none;
+}
+
+.bottom-nav-item.active {
+  color: var(--button);
+  font-weight: 600;
+}
+
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+h2 {
+  font-size: 1.05rem;
+  margin: 0 0 0.5rem;
+}
+
+.header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.header-row h1 {
+  margin: 0;
+}
+
+a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.small-button {
+  min-height: 36px;
+  padding: 0.25rem 0.85rem;
+  font-size: 0.9rem;
+}
+
+.button.secondary {
+  background: var(--bg-secondary);
+  color: var(--link);
+  border: 1px solid var(--separator);
+}
+
+.button.danger {
+  background: var(--debt);
+  color: #fff;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.actions .button {
+  flex: 1 1 140px;
+}
+
+.notice {
+  margin: 0.5rem 1rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--credit) 15%, var(--bg));
+  color: var(--text);
+}
+
+.card .notice {
+  margin: 0 0 0.75rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.field-label {
+  font-size: 0.9rem;
+  color: var(--hint);
+}
+
+.field-error {
+  color: var(--debt);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--separator);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text);
+  font: inherit;
+}
+
+textarea.input {
+  resize: vertical;
+}
+
+.button.wide-inline {
+  width: 100%;
+}
+
+.link-button {
+  align-self: flex-start;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--link);
+  cursor: pointer;
+}
+
+.danger-text {
+  color: var(--debt);
+}
+
+.picked-client {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.picker .row {
+  width: 100%;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ledger {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--separator);
+}
+
+.ledger-row:last-child {
+  border-bottom: 0;
+}
+
+.ledger-amounts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex: none;
+  text-align: right;
+}
+
+.payment-row {
+  border-bottom: 1px solid var(--separator);
+  padding-bottom: 0.5rem;
+}
+
+.payment-row .row {
+  border-bottom: 0;
+}
+
+.payment-row .row-title {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.inset {
+  margin: 0 1rem;
+}
+
+.confirm {
+  padding: 0.5rem 0;
+}
+
+.confirm .actions {
+  margin-top: 0.5rem;
+}
+
+@media (min-width: 720px) {
+  .card,
+  .list {
+    border-radius: 12px;
+    margin-left: 1rem;
+    margin-right: 1rem;
+    overflow: hidden;
+  }
+}

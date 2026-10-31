@@ -4,6 +4,8 @@ Every phase must follow this document. If a phase needs to change a contract her
 
 Business background and decisions: [analysis-and-plan.md](analysis-and-plan.md).
 
+**Current versus planned:** this document describes the existing bot implementation. The next delivery track is defined in the [Mini App/PostgreSQL roadmap](mini-app-plan.md) and [target architecture](mini-app-architecture.md). Follow those target contracts within the assigned phase, and update this document when the corresponding change is implemented. A plan is not evidence that PostgreSQL, an API, or a frontend already exists.
+
 ---
 
 ## 1. Tech stack (fixed)
@@ -12,12 +14,13 @@ Business background and decisions: [analysis-and-plan.md](analysis-and-plan.md).
 |---|---|
 | Language | Python 3.12 |
 | Bot | aiogram 3.x, long polling, `MemoryStorage` for FSM |
-| Database | SQLite via SQLAlchemy 2.x async + `aiosqlite`; tables created with `create_all` on startup (no migrations in MVP) |
+| HTTP API | FastAPI + Uvicorn (`python -m sheepbot.api`), section 9a |
+| Database | PostgreSQL 17 via SQLAlchemy 2.x async + `asyncpg`; schema managed by Alembic (`migrations/`), never `create_all` at runtime |
 | Config | `pydantic-settings`, values from `.env` |
 | Excel in/out | openpyxl |
 | PDF | ReportLab (platypus) with bundled DejaVu Sans fonts |
 | Lint/format | ruff (line length 100) |
-| Run | `python -m sheepbot`; Docker + docker compose |
+| Run | `python -m sheepbot` (bot), `python -m sheepbot.api` (API); Docker + docker compose |
 
 ---
 
@@ -31,7 +34,9 @@ sheep-calc-mgmt/
 ├── .env.example
 ├── .gitignore
 ├── Dockerfile
-├── docker-compose.yml
+├── docker-compose.yml                      # postgres, migrate (one-shot), bot, api
+├── alembic.ini
+├── migrations/                             # Alembic env + versions/ (0001 baseline)
 ├── docs/
 │   ├── analysis-and-plan.md
 │   ├── architecture.md
@@ -42,7 +47,7 @@ sheep-calc-mgmt/
 ├── scripts/
 │   ├── build_template.py
 │   ├── build_demo_files.py
-│   └── load_demo.py
+│   └── load_demo.py                        # demo trips + payments into an empty DB
 ├── src/sheepbot/
 │   ├── __main__.py                         # entry point: starts the bot
 │   ├── config.py                           # Settings, get_settings()
@@ -50,7 +55,7 @@ sheep-calc-mgmt/
 │   ├── db/
 │   │   ├── base.py                         # DeclarativeBase, common mixins
 │   │   ├── models.py                       # all ORM models (section 6)
-│   │   ├── session.py                      # engine, async_sessionmaker, init_db()
+│   │   ├── session.py                      # engine, async_sessionmaker, init_db() (storage dirs)
 │   │   └── seed.py                         # products + admin user (idempotent)
 │   ├── domain/
 │   │   ├── enums.py                        # enums + Russian labels (section 5)
@@ -72,6 +77,14 @@ sheep-calc-mgmt/
 │   │   ├── xlsx_builder.py
 │   │   ├── pdf_builder.py
 │   │   └── fonts/                          # DejaVuSans.ttf, DejaVuSans-Bold.ttf, LICENSE
+│   ├── api/                                # Mini App HTTP API (section 9a)
+│   │   ├── __main__.py                     # uvicorn entry point
+│   │   ├── app.py                          # FastAPI app, error handlers, routers under /api/v1
+│   │   ├── auth.py                         # initData validation, CurrentUser, require(perm)
+│   │   ├── deps.py                         # per-request AsyncSession
+│   │   ├── schemas.py                      # response models
+│   │   ├── texts.py                        # Russian API messages
+│   │   └── routers/                        # health.py, me.py, clients.py
 │   └── bot/
 │       ├── app.py                          # Bot, Dispatcher, middlewares, routers, commands
 │       ├── texts.py                        # ALL Russian bot strings and button labels
@@ -89,7 +102,8 @@ sheep-calc-mgmt/
 │           ├── clients.py                  # /clients
 │           ├── payments.py                 # /pay, /payments
 │           └── reports.py                  # /report, /debts, /trips
-└── storage/                                # runtime, git-ignored: app.db, uploads/
+├── web/                                    # Mini App: Vite + React + TypeScript (section 9b)
+└── storage/                                # runtime, git-ignored: uploads/
 ```
 
 ---
@@ -116,7 +130,8 @@ flowchart TD
 - **`domain/`** is pure Python: no DB, no Telegram, no I/O.
 - **`excel/parser.py`** does not touch the DB; it returns dataclasses.
 - **Report builders** take dataclasses and return `bytes`; they do not query the DB.
-- Russian user-facing text lives only in: `bot/texts.py`, labels in `domain/enums.py`, `excel/template_spec.py`, `excel/parser.py` (validation messages), `reports/`. Code, identifiers, comments and docs are English.
+- Russian user-facing text lives only in: `bot/texts.py`, `api/texts.py`, labels in `domain/enums.py`, `excel/template_spec.py`, `excel/parser.py` (validation messages), `reports/`. Code, identifiers, comments and docs are English.
+- **API routers** are thin like bot handlers: they call the same services. Write endpoints commit before returning.
 
 ---
 
@@ -126,12 +141,19 @@ flowchart TD
 |---|---|---|---|
 | `BOT_TOKEN` | yes | — | Telegram bot token |
 | `ADMIN_TELEGRAM_ID` | yes | — | Telegram user ID of the admin |
-| `DATABASE_URL` | no | `sqlite+aiosqlite:///./storage/app.db` | SQLAlchemy URL |
-| `STORAGE_DIR` | no | `./storage` | Runtime files (DB, uploads) |
+| `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | for Compose | — | Used by the `postgres` service; Compose builds the in-network `DATABASE_URL` from them |
+| `DATABASE_URL` | no | `postgresql+asyncpg://sheepbot:sheepbot@localhost:5432/sheepbot` | SQLAlchemy URL for local runs, scripts and Alembic |
+| `STORAGE_DIR` | no | `./storage` | Runtime files (uploads) |
 | `TIMEZONE` | no | `Asia/Tashkent` | Used for "today" and timestamps |
 | `LOG_LEVEL` | no | `INFO` | |
 | `COMPANY_NAME` | no | empty | Shown in report headers when set |
 | `MAX_UPLOAD_MB` | no | `10` | Max accepted `.xlsx` size |
+| `APP_ENV` | no | `prod` | `dev` enables the dev-only auth shortcut below |
+| `DEV_AUTH_TELEGRAM_ID` | no | empty | With `APP_ENV=dev`, API requests without initData act as this user. Never set on a server |
+| `WEBAPP_AUTH_MAX_AGE_HOURS` | no | `24` | Max age of Mini App `initData` |
+| `API_HOST` / `API_PORT` | no | `127.0.0.1` / `8000` | API bind address (Compose sets `0.0.0.0` inside the container and publishes `127.0.0.1:8000`) |
+| `WEB_DIST_DIR` | no | `web/dist` | Built Mini App served by the API; API-only if missing |
+| `MINI_APP_URL` | no | empty | HTTPS URL of the Mini App; when set, the bot's chat menu button opens it |
 
 `config.get_settings()` returns a cached `Settings` instance.
 
@@ -170,7 +192,7 @@ Labels are exposed as `LABELS: dict[Enum, str]` per enum (e.g. `ANIMAL_TYPE_LABE
 
 ## 6. Database schema (`db/models.py`)
 
-Conventions: integer `id` primary keys; `created_at` / `updated_at` UTC timestamps on every table; enums stored as strings; kg as `Numeric(10,1)`; KZT/USD money as `Numeric(16,2)`; **UZS money as `Integer` (whole so'm)**; rates as `Numeric(14,4)`.
+Conventions: integer `id` primary keys; `created_at` / `updated_at` UTC timestamps on every table; enums stored as strings; kg as `Numeric(10,1)`; KZT/USD money as `Numeric(16,2)`; **UZS money as `BigInteger` (whole so'm)**; rates as `Numeric(14,4)`. Constraint names follow `db/base.py:NAMING_CONVENTION`. Every schema change is a new Alembic revision (`alembic revision --autogenerate`, then review); `alembic check` must report no difference. Aggregates over UZS columns are cast back to `BigInteger` because PostgreSQL returns `SUM(bigint)` as numeric.
 
 ### `bot_user`
 | Column | Type | Notes |
@@ -359,7 +381,7 @@ General rules: row 1 = headers; data from row 2; the parser stops at the first f
 
 ## 9. Bot conventions
 
-- **Startup** (`bot/app.py`): `init_db()` → `seed()` → register middlewares → include routers from `bot/handlers/__init__.py:ROUTERS` → `set_my_commands` → start polling.
+- **Startup** (`bot/app.py`): `init_db()` (storage folders) → `seed()` → register middlewares → include routers from `bot/handlers/__init__.py:ROUTERS` → `set_my_commands` → `set_profile` (Russian description/short description; chat menu button = Mini App if `MINI_APP_URL` is an `https://` URL, otherwise the default commands button; Telegram errors only logged) → start polling. The schema must already be at Alembic head; Compose runs the `migrate` service first.
 - **Middlewares**: `DbSessionMiddleware` injects `session`; `AuthMiddleware` injects `user: BotUser | None` (looked up by Telegram ID; never creates users).
 - **Permissions**: filter `HasPermission(Perm.UPLOAD | Perm.VIEW | Perm.ADMIN)`; admin passes every check; user must be `active`.
 - **Commands** are Latin (Telegram rule); descriptions Russian. Users mainly use the reply-keyboard menu.
@@ -385,6 +407,31 @@ General rules: row 1 = headers; data from row 2; the parser stops at the first f
 - **Client picker** (`bot/client_picker.py`, Phase 05): reusable step "type ≥ 2 letters → up to 10 matching clients as buttons"; used by payments, clients and reports.
 - **Files** are sent with `BufferedInputFile`.
 - **Errors**: unexpected exceptions are logged; the user gets `texts.ERROR_GENERIC`.
+
+---
+
+## 9a. API conventions
+
+- App: `api/app.py`; routes under `/api/v1`; OpenAPI at `/api/openapi.json`, Swagger UI at `/api/docs`. Separate process from the bot; never starts polling.
+- **Auth** (`api/auth.py`): every request sends `Authorization: tma <raw Telegram.WebApp.initData>`. Validated with aiogram `safe_parse_webapp_init_data` and the bot token; rejected (401) when the signature/user is missing or invalid, longer than 16 KiB, older than `WEBAPP_AUTH_MAX_AGE_HOURS`, or more than 5 minutes in the future. The user is loaded from `bot_user` on every request; unknown, pending, blocked or permission-less users get 403 (`users.is_allowed`). No sessions or tokens are stored.
+- **Dependencies**: `Session` (`api/deps.py`, one `AsyncSession` per request, closed without commit), `CurrentUser`, and `Depends(require(Perm.X))` reusing `users.has_permission` (admin passes).
+- **Responses**: IDs are numbers; money, kg, prices and rates are strings; enums are their stored values plus a Russian label where useful.
+- **Errors**: `{"detail": "<Russian message>"}`; validation errors add `"fields": {"sales[3].gross_kg": "..."}` with Russian messages (value errors carry their own text; common Pydantic types are mapped in `api/texts.py:VALIDATION_MESSAGES`). 401 auth, 403 access, 404 (JSON, also for unknown `/api` paths), 409 duplicate, 422 input, 500 logged with method/path only. The Authorization header is never logged.
+- **Input models** extend `schemas.InputModel` (`extra="forbid"`, strings stripped). Write endpoints use `UploadUser` and commit before returning.
+- **Endpoints so far**: `GET /health` (no auth, checks DB), `GET /me` (profile, `permissions` list of `upload`/`view`/`admin`), `GET /catalog` (products, animal types, currencies, payment methods), `GET /clients?q=&filter=all|debt|credit|zero&limit=&offset=` (`{items, total}`, ordered by normalized name, via `balances.page_balances`), `GET /clients/{id}` (balance + phone), `GET /clients/{id}/ledger?date_from=&date_to=` (statement data: opening/closing, lines with running balance). These need any permission. Upload only: `POST /clients`, `PATCH /clients/{id}` (name and/or phone; `phone: null` clears; duplicate normalized name → 409 naming the existing client), `GET /payments?client_id=&limit=&offset=` (newest entry first), `POST /payments` (`amount_uzs` whole so'm string 1..10^12, method, date not in the future in `TIMEZONE`, note ≤ 500; returns the payment and the new balance; overpayment allowed), `DELETE /payments/{id}` (soft delete with `deleted_by`/`deleted_at`; 404 if already deleted).
+- **Frontend serving**: when `WEB_DIST_DIR/index.html` exists, `/assets/*` are static files and every other non-`/api` path returns `index.html` (client-side routing). Paths resolving outside the dist folder never return files.
+
+## 9b. Mini App frontend (`web/`)
+
+- Vite + React + TypeScript (strict), React Router (`createBrowserRouter`), TanStack Query. Lint with oxlint. Scripts: `npm run dev | build | lint | typecheck`.
+- `src/telegram.ts` wraps `telegram-web-app.js` (loaded in `index.html`): `initData`, `ready/expand`, native BackButton (version ≥ 6.1; in-app back link otherwise).
+- `src/api.ts` is the only HTTP client: adds `Authorization: tma <initData>`, turns error responses into `ApiError(status, detail, fields)`. Types are hand-written to mirror `api/schemas.py`.
+- `src/Root.tsx` loads `/me` before any page; 401/403 shows the access screen. `src/router.tsx` defines routes: `/clients`, `/clients/new`, `/clients/:id`, `/clients/:id/edit`, `/payments`, `/payments/new?client=`.
+- `src/hooks.ts`: `useMe`, `useCanUpload` (hides write actions; the server still enforces), `useInvalidateMoney` (refetch clients/ledger/payments after any write), `useSingleFlight` (synchronous guard so a double tap sends one write request; required on every write button).
+- All Russian UI strings live in `src/texts.ts`; amounts are formatted from strings in `src/format.ts` (no float conversion). The only arithmetic is the payment confirmation's indicative "balance after", done with `BigInt`; the server's returned balance is authoritative. Debt/credit are always labelled in text, colour is secondary.
+- Forms: `Field` wraps one control in a `<label>`; button sets use `Field group` (labelled `role="group"`). Server `fields` errors are shown under the matching field.
+- Theme follows Telegram's `--tg-theme-*` CSS variables with light/dark fallbacks for a normal browser. List search and filter live in the URL query, so they survive navigation.
+- Build: the Dockerfile builds `web/` in a Node 20 stage and copies `dist` to `/app/web/dist`.
 
 ---
 
@@ -417,3 +464,22 @@ General rules: row 1 = headers; data from row 2; the parser stops at the first f
 - Real sample files (with real client names and phones) live **outside the repo**, in the parent workspace folder. Use them only as reference; never copy them or their names into the repo.
 - Demo data in `assets/demo/` must be fictional.
 - `.env` and `storage/` are git-ignored. Never commit tokens.
+
+---
+
+## 13. Planned Mini App Transition
+
+Phases 08-15 extend the MVP. Their [target contracts](mini-app-architecture.md) authorize only the changes in the assigned phase; unrelated items previously deferred remain out of scope.
+
+| Phase | Contract to update here after implementation |
+|---|---|
+| 08 | PostgreSQL/asyncpg/Alembic replace SQLite and startup `create_all`; demo loader |
+| 09 | API process, `initData` authentication, permission dependency |
+| 10 | Frontend layout/build, Russian UI text location, Mini App launch settings, client read endpoints |
+| 11 | Client and payment endpoints |
+| 12 | Report/export endpoints and send-to-chat, user administration endpoints |
+| 13 | Trip input shape shared with the Excel parser; nullable `trip.upload_id` |
+| 14 | Trip edit round trip and Excel parsing through the API |
+| 15 | Server setup, Caddy, backups and restore |
+
+Preserve Decimal rounding, UZS units, client-level payments, replace-by-number trips, normalized client identity, Russian output and privacy rules throughout. The no-automated-tests policy remains in force.

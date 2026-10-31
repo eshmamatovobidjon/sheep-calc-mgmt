@@ -3,11 +3,25 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
+from enum import StrEnum
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import BigInteger, Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from sheepbot.db.models import Client, Payment, Sale
+from sheepbot.services.clients import normalize_client_name
+
+
+class BalanceFilter(StrEnum):
+    ALL = "all"
+    DEBT = "debt"
+    CREDIT = "credit"
+    ZERO = "zero"
+
+
+def _sum_int(column):
+    # PostgreSQL returns SUM(bigint) as numeric; keep balances as int.
+    return func.coalesce(func.sum(column), 0).cast(BigInteger)
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,11 +38,15 @@ class ClientBalance:
         return self.shipped - self.paid
 
 
-def _balances_stmt(client_ids: Sequence[int] | None = None) -> Select:
+def _balances_stmt(
+    client_ids: Sequence[int] | None = None,
+    query: str = "",
+    kind: BalanceFilter = BalanceFilter.ALL,
+) -> Select:
     sales = (
         select(
             Sale.client_id,
-            func.sum(Sale.amount_uzs).label("shipped"),
+            _sum_int(Sale.amount_uzs).label("shipped"),
             func.max(Sale.date).label("last_sale"),
         )
         .group_by(Sale.client_id)
@@ -37,28 +55,38 @@ def _balances_stmt(client_ids: Sequence[int] | None = None) -> Select:
     payments = (
         select(
             Payment.client_id,
-            func.sum(Payment.amount_uzs).label("paid"),
+            _sum_int(Payment.amount_uzs).label("paid"),
             func.max(Payment.date).label("last_payment"),
         )
         .where(Payment.is_deleted.is_(False))
         .group_by(Payment.client_id)
         .subquery()
     )
+    shipped = func.coalesce(sales.c.shipped, 0)
+    paid = func.coalesce(payments.c.paid, 0)
     stmt = (
         select(
             Client.id,
             Client.name,
-            func.coalesce(sales.c.shipped, 0),
-            func.coalesce(payments.c.paid, 0),
+            shipped,
+            paid,
             sales.c.last_sale,
             payments.c.last_payment,
         )
         .outerjoin(sales, sales.c.client_id == Client.id)
         .outerjoin(payments, payments.c.client_id == Client.id)
-        .order_by(Client.name_key)
+        .order_by(Client.name_key, Client.id)
     )
     if client_ids is not None:
         stmt = stmt.where(Client.id.in_(client_ids))
+    if key := normalize_client_name(query):
+        stmt = stmt.where(Client.name_key.contains(key, autoescape=True))
+    if kind is BalanceFilter.DEBT:
+        stmt = stmt.where(shipped > paid)
+    elif kind is BalanceFilter.CREDIT:
+        stmt = stmt.where(shipped < paid)
+    elif kind is BalanceFilter.ZERO:
+        stmt = stmt.where(shipped == paid)
     return stmt
 
 
@@ -68,8 +96,8 @@ async def _load(session: AsyncSession, client_ids: Sequence[int] | None) -> list
 
 
 async def client_balance(session: AsyncSession, client_id: int, as_of: date | None = None) -> int:
-    shipped = select(func.coalesce(func.sum(Sale.amount_uzs), 0)).where(Sale.client_id == client_id)
-    paid = select(func.coalesce(func.sum(Payment.amount_uzs), 0)).where(
+    shipped = select(_sum_int(Sale.amount_uzs)).where(Sale.client_id == client_id)
+    paid = select(_sum_int(Payment.amount_uzs)).where(
         Payment.client_id == client_id, Payment.is_deleted.is_(False)
     )
     if as_of is not None:
@@ -91,3 +119,13 @@ async def balances_for(
 
 async def all_balances(session: AsyncSession) -> list[ClientBalance]:
     return await _load(session, None)
+
+
+async def page_balances(
+    session: AsyncSession, query: str, kind: BalanceFilter, offset: int, limit: int
+) -> tuple[list[ClientBalance], int]:
+    """One page of client balances matching the name query and filter, plus the total count."""
+    stmt = _balances_stmt(query=query, kind=kind)
+    total = await session.scalar(select(func.count()).select_from(stmt.order_by(None).subquery()))
+    rows = await session.execute(stmt.offset(offset).limit(limit))
+    return [ClientBalance(*row) for row in rows], total or 0

@@ -2,7 +2,7 @@
 
 from datetime import UTC, date, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -42,6 +42,25 @@ async def list_recent(session: AsyncSession, limit: int = 20) -> list[Payment]:
         .limit(limit)
     )
     return list(await session.scalars(stmt))
+
+
+async def page_payments(
+    session: AsyncSession, client_id: int | None, offset: int, limit: int
+) -> tuple[list[Payment], int]:
+    """Non-deleted payments, newest entry first, optionally for one client; plus total count."""
+    conditions = [Payment.is_deleted.is_(False)]
+    if client_id is not None:
+        conditions.append(Payment.client_id == client_id)
+    total = await session.scalar(select(func.count()).select_from(Payment).where(*conditions))
+    stmt = (
+        select(Payment)
+        .where(*conditions)
+        .options(selectinload(Payment.client), selectinload(Payment.entered_by))
+        .order_by(Payment.id.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    return list(await session.scalars(stmt)), total or 0
 
 
 async def get_payment(session: AsyncSession, payment_id: int) -> Payment | None:
