@@ -40,6 +40,12 @@ class UploadStatus(StrEnum):
     REJECTED = "rejected"
 
 
+class Perm(StrEnum):
+    UPLOAD = "upload"
+    VIEW = "view"
+    ADMIN = "admin"
+
+
 ANIMAL_TYPE_LABELS: dict[AnimalType, str] = {
     AnimalType.SOVLIQ: "Совлик",
     AnimalType.QUCHQOR: "Кучкор",
