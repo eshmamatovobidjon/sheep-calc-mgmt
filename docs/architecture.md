@@ -116,7 +116,7 @@ flowchart TD
 - **`domain/`** is pure Python: no DB, no Telegram, no I/O.
 - **`excel/parser.py`** does not touch the DB; it returns dataclasses.
 - **Report builders** take dataclasses and return `bytes`; they do not query the DB.
-- Russian user-facing text lives only in: `bot/texts.py`, labels in `domain/enums.py`, `excel/template_spec.py`, `reports/`. Code, identifiers, comments and docs are English.
+- Russian user-facing text lives only in: `bot/texts.py`, labels in `domain/enums.py`, `excel/template_spec.py`, `excel/parser.py` (validation messages), `reports/`. Code, identifiers, comments and docs are English.
 
 ---
 

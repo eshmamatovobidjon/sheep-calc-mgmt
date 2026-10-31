@@ -42,6 +42,37 @@ CALLBACK_EXPIRED = "Действие устарело."
 # Template
 TEMPLATE_CAPTION = "Заполните и отправьте файл в этот чат."
 
+# Trip upload
+UPLOAD_PROMPT = "Отправьте заполненный файл .xlsx (шаблон — кнопка «Шаблон»)."
+UPLOAD_WRONG_TYPE = "Нужен Excel-файл в формате .xlsx — заполненный шаблон рейса."
+UPLOAD_TOO_BIG = "Файл слишком большой: максимум {mb} МБ."
+UPLOAD_REJECTED = "❌ <b>Файл отклонён.</b> Исправьте ошибки и отправьте файл снова:"
+UPLOAD_ERRORS_MORE = "…и ещё {n} {word}"
+UPLOAD_ERRORS_STOPPED = "Проверка остановлена после {n} ошибок."
+UPLOAD_SAVED = "✅ Рейс №{number} сохранён."
+UPLOAD_CANCELLED = "Загрузка отменена."
+BTN_SAVE = "Сохранить"
+BTN_UPLOAD_CANCEL = "Отмена"
+ERROR_FORMS = ("ошибка", "ошибки", "ошибок")
+
+PREVIEW_TITLE = "<b>Рейс №{number}</b>"
+PREVIEW_REPLACES = " — <b>ЗАМЕНИТ существующий</b>"
+PREVIEW_DEPARTURE = "Отправка: {date}"
+PREVIEW_PURCHASE = (
+    "Закуп: {heads} гол., {gross} кг брутто → {net} кг нетто\n    {kzt} KZT = {uzs} сум"
+)
+PREVIEW_EXPENSES = "Расходы: {uzs} сум"
+PREVIEW_SALES = (
+    "Продажи: {heads} гол., {net} кг нетто, {uzs} сум\n"
+    "    {lines} {lines_word}, {clients} {clients_word}"
+)
+PREVIEW_PROFIT = "Прибыль: <b>{uzs} сум</b> ({pct}%)"
+PREVIEW_NEW_CLIENTS = "Новые клиенты ({count}): {names}"
+PREVIEW_MORE = " … и ещё {n}"
+PREVIEW_CONFIRM = "Сохранить рейс?"
+LINE_FORMS = ("строка", "строки", "строк")
+CLIENT_FORMS = ("клиент", "клиента", "клиентов")
+
 # Access
 REQUEST_SENT = "Запрос отправлен администратору. Вы получите сообщение, когда доступ откроют."
 REQUEST_PENDING = "Ваш запрос на рассмотрении."

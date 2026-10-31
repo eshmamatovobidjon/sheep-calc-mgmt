@@ -28,7 +28,7 @@ Current goal: an **MVP for a business demo**, happy path only. Bot UI and report
 | 01 | [Foundation](docs/phases/phase-01-foundation.md) | — | — | Done |
 | 02 | [Access control and bot shell](docs/phases/phase-02-access-control.md) | 01 | 03 | Done |
 | 03 | [Template and demo data](docs/phases/phase-03-template-and-demo-data.md) | 01 | 02, 05 | Done |
-| 04 | [Trip upload](docs/phases/phase-04-trip-upload.md) | 01, 02, 03 | 05 | Not started |
+| 04 | [Trip upload](docs/phases/phase-04-trip-upload.md) | 01, 02, 03 | 05 | Done |
 | 05 | [Clients and payments](docs/phases/phase-05-clients-and-payments.md) | 01, 02 | 03, 04 | Not started |
 | 06 | [Reports](docs/phases/phase-06-reports.md) | 04, 05 | — | Not started |
 | 07 | [Deployment and demo prep](docs/phases/phase-07-deployment-and-demo.md) | 01–06 | — | Not started |
@@ -132,3 +132,31 @@ Each phase appends a short entry here when done: what was built, deviations from
 
   Trips 101 and 102 share 11 of the 15 fictional clients.
 - Not verified here: opening the files in Excel or LibreOffice (LibreOffice isn't installed on this machine).
+
+### Phase 04 — Trip upload
+
+- Built: `domain/calculations.py`, `excel/parser.py`, `services/trips.py`, and `handlers/upload.py` (the "Загрузить рейс" prompt, `.xlsx` documents, Сохранить/Отмена with callback prefix `upl`).
+- **Calculations:**
+  - `trip_totals(purchase_lines, expense_uzs_values, sale_lines) -> TripTotals`. Inputs are the plain `PurchaseLine` / `SaleLine` dataclasses, so Phase 06 can build them from DB rows. A `SaleLine` needs `client_key` (from `normalize_client_name`) and `client_name`.
+  - `TripTotals` holds `purchases` / `sales` groups plus by-type, by-day, by-product and by-client groups. It has properties `revenue_uzs`, `cost_uzs`, `profit_uzs`, `margin_pct`, and methods `cost_per_kg(type)` and `avg_sale_price(type)`.
+  - The rounding helpers live in the same module.
+- **Services:**
+  - `trips.compute_trip(parsed, products)` gives per-row computed values plus totals. Preview and save both use it, so their numbers always match.
+  - `save_trip` deletes an existing trip with the same number (children go via DB `ON DELETE CASCADE`), creates missing clients, inserts all rows, and marks the upload `saved`.
+- **Uploads:**
+  - Files are stored as `storage/uploads/<sha256>.xlsx`; identical files are stored once. Every upload gets its own `upload` row.
+  - Only the uploader or the admin can press Save/Cancel on a pending upload. A stale button replies "Действие устарело".
+  - Parsing runs in a worker thread (`asyncio.to_thread`).
+- **Parser:**
+  - Sheet names and headers are compared with `normalize_header`. Product codes and choice values are trimmed and case-insensitive (`ё`=`е`).
+  - Numbers accept `,` or `.` and spaces. Integers must be whole. Errors are capped at 50, and `ParseResult.too_many_errors` flags the cut. Each sheet allows at most 5,000 rows.
+  - If a sheet has a wrong header, its rows are skipped to avoid cascading errors.
+- **Additions to the docs:**
+  - `formatting.fmt_percent()` and `formatting.plural(n, forms)` (Russian plural forms).
+  - The architecture doc now allows Russian validation messages in `excel/parser.py`.
+  - The fallback answers "Нет доступа" to documents from users without Upload permission.
+- Verified offline (fake updates through the dispatcher):
+  - Both demo files preview and save, and the preview totals equal the Phase 03 table.
+  - A re-upload shows "ЗАМЕНИТ" and the row counts stay at 10/6/51.
+  - Clients go to 13, then to 15 after trip 102, with no duplicates.
+  - A broken file is reported with sheet, row and column. `.pdf`, a file larger than 10 MB, a non-Excel `.xlsx`, and a View-only user all get a clear refusal.

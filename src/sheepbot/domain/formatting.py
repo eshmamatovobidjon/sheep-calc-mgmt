@@ -37,6 +37,21 @@ def fmt_date(value: date) -> str:
     return value.strftime(DATE_FORMAT)
 
 
+def fmt_percent(value: Decimal) -> str:
+    """One decimal with comma separator: 7.25 -> '7,3'."""
+    return f"{value.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)}".replace(".", ",")
+
+
+def plural(n: int, forms: tuple[str, str, str]) -> str:
+    """Russian plural form for n: forms = (one, few, many), e.g. ('строка', 'строки', 'строк')."""
+    n = abs(n)
+    if n % 10 == 1 and n % 100 != 11:
+        return forms[0]
+    if 2 <= n % 10 <= 4 and not 12 <= n % 100 <= 14:
+        return forms[1]
+    return forms[2]
+
+
 def fmt_datetime(value: datetime) -> str:
     """Format in the configured timezone; naive values are treated as UTC."""
     if value.tzinfo is None:

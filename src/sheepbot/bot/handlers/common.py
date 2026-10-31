@@ -97,7 +97,9 @@ async def fallback_message(message: Message, user: BotUser | None) -> None:
         return
 
     item = find_menu_item(message.text or "")
-    if item is None:
+    if message.document is not None:
+        text = texts.NO_ACCESS  # the upload router handles documents from Upload users
+    elif item is None:
         text = texts.UNKNOWN_INPUT
     elif not users.has_permission(user, item.perm):
         text = texts.NO_ACCESS
