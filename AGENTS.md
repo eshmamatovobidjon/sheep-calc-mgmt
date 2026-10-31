@@ -27,7 +27,7 @@ Current goal: an **MVP for a business demo**, happy path only. Bot UI and report
 |---|---|---|---|---|
 | 01 | [Foundation](docs/phases/phase-01-foundation.md) | — | — | Done |
 | 02 | [Access control and bot shell](docs/phases/phase-02-access-control.md) | 01 | 03 | Done |
-| 03 | [Template and demo data](docs/phases/phase-03-template-and-demo-data.md) | 01 | 02, 05 | Not started |
+| 03 | [Template and demo data](docs/phases/phase-03-template-and-demo-data.md) | 01 | 02, 05 | Done |
 | 04 | [Trip upload](docs/phases/phase-04-trip-upload.md) | 01, 02, 03 | 05 | Not started |
 | 05 | [Clients and payments](docs/phases/phase-05-clients-and-payments.md) | 01, 02 | 03, 04 | Not started |
 | 06 | [Reports](docs/phases/phase-06-reports.md) | 04, 05 | — | Not started |
@@ -107,3 +107,28 @@ Each phase appends a short entry here when done: what was built, deviations from
 - Unhandled exceptions: `common.on_error` logs them and replies with `texts.ERROR_GENERIC`. The DB session has already been rolled back by then.
 - Deviations: `Perm` is defined in `domain/enums.py` (services need it) and re-exported from `bot/filters.py`. `AuthMiddleware` refreshes the stored `full_name`/`username` from Telegram, so the seeded admin name gets replaced. When the admin turns on a permission in `/users` for a pending user, that user is activated and notified. Unknown users who send anything other than `/start` get "Отправьте /start…". `/users` lists every user except the admin.
 - Verified offline by feeding fake updates through the dispatcher: request → grant/reject, permission-gated menus, `/users` toggles, block/unblock, fallback replies. Not yet verified with live Telegram accounts.
+
+### Phase 03 — Template and demo data
+
+- Built: `excel/template_spec.py`, the new `excel/template_builder.py`, `scripts/build_template.py`, `scripts/build_demo_files.py`, `assets/templates/trip_template_v1.xlsx`, `assets/demo/demo_trip_101.xlsx` and `demo_trip_102.xlsx`, and `/template` plus the "Шаблон" button (Upload permission).
+- **Contract changes** (architecture sections 2 and 8 are updated):
+  - New module `excel/template_builder.py`. `build_template(trip, rows)` returns the workbook as `.xlsx` bytes; with no data it returns the blank template.
+  - `ColumnSpec` gained `gt` / `ge` (numeric lower bounds) and `width`.
+  - `header` is stored without `*`; `display_header` adds it for required columns.
+- **For the parser (Phase 04):**
+  - Use `DATA_SHEETS` / `TABLE_SHEETS`, `SheetSpec.column(key)` and `normalize_header()`.
+  - The `Рейс` sheet is key/value: rows 2–7 follow the order of `TRIP_SHEET.columns`, values are in column B, and row 1 is `Поле | Значение`.
+  - `Продажи.heads` is `required=False` in the spec; the parser must require it for animal products.
+  - Column keys: purchases `date, animal_type, heads, gross_kg, discount_kg, price_kzt, note`; expenses `item, qty, unit_price, currency, note`; sales `day, date, client, product, heads, gross_kg, price_thousand_uzs, note`.
+- The bot builds the template in memory (cached), so the Docker image doesn't need `assets/`.
+- `Справочник` layout: `A1` = version; columns B/C/D hold the Тип / Валюта / Товар lists (header in row 1, values from row 2). Dropdowns cover data rows 2–1000.
+- In the demo files, some expenses leave `Кол-во` empty, which tests the "defaults to 1" rule.
+- Demo numbers from the generator, computed with the section 7 rounding rules. Phase 04's preview should match them.
+
+  | File | Закуп rows | Heads | Gross kg | Net kg | Продажи lines | Clients | Sold heads | Cost UZS | Revenue UZS | Profit |
+  |---|---|---|---|---|---|---|---|---|---|---|
+  | `demo_trip_101.xlsx` | 10 | 606 | 20 750.9 | 19 252.7 | 51 | 13 | 606 | 1 868 413 480 | 1 990 946 550 | 122 533 070 (6.6%) |
+  | `demo_trip_102.xlsx` | 9 | 602 | 20 724.9 | 19 247.9 | 56 | 13 | 602 | 1 866 720 696 | 2 026 045 700 | 159 325 004 (8.5%) |
+
+  Trips 101 and 102 share 11 of the 15 fictional clients.
+- Not verified here: opening the files in Excel or LibreOffice (LibreOffice isn't installed on this machine).

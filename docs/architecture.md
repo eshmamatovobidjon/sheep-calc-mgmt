@@ -59,6 +59,7 @@ sheep-calc-mgmt/
 │   │   └── formatting.py                   # number/date formatting and parsing (section 11)
 │   ├── excel/
 │   │   ├── template_spec.py                # single source of truth for the template (section 8)
+│   │   ├── template_builder.py             # spec -> .xlsx bytes (blank or filled); used by bot and scripts
 │   │   └── parser.py                       # xlsx -> ParsedTrip + errors
 │   ├── services/
 │   │   ├── users.py
@@ -306,7 +307,7 @@ Use `Decimal` everywhere. Rounding: `ROUND_HALF_UP`. kg → 1 decimal; KZT/USD �
 
 ## 8. Trip template v1 (`excel/template_spec.py`)
 
-`template_spec.py` is the **single source of truth**: the template builder and the parser both read it. It exposes `TEMPLATE_VERSION = "trip_template_v1"` and dataclasses `ColumnSpec(key, header, kind, required, choices)` and `SheetSpec(name, kind, columns)`.
+`template_spec.py` is the **single source of truth**: the template builder and the parser both read it. It exposes `TEMPLATE_VERSION = "trip_template_v1"` and dataclasses `ColumnSpec(key, header, kind, required, choices, gt, ge, width)` and `SheetSpec(name, kind, columns)`. `gt` / `ge` are the numeric lower bounds below ("> 0" → `gt=0`, "≥ 1" → `ge=1`); `header` has no `*` (`display_header` adds it for required columns); `normalize_header()` is the comparison key. `template_builder.build_template(trip, rows)` writes the workbook (blank when called without data).
 
 Sheet order: `Инструкция`, `Рейс`, `Закуп`, `Расходы`, `Продажи`, `Справочник` (hidden; dropdown lists; `A1` = template version).
 

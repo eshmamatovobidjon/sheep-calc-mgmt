@@ -1,10 +1,11 @@
 from aiogram import Router
 
-from sheepbot.bot.handlers import common, users
+from sheepbot.bot.handlers import common, template, users
 
 # Order matters: common first (/start, /menu, /cancel win in any state), fallback last.
 ROUTERS: list[Router] = [
     common.router,
     users.router,
+    template.router,
     common.fallback_router,
 ]
