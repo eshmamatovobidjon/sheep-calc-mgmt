@@ -19,3 +19,9 @@ class PaymentStates(StatesGroup):
 class ClientStates(StatesGroup):
     add_name = State()
     rename = State()
+
+
+class ReportStates(StatesGroup):
+    statement_period = State()
+    statement_dates = State()
+    statement_format = State()

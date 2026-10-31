@@ -30,7 +30,7 @@ Current goal: an **MVP for a business demo**, happy path only. Bot UI and report
 | 03 | [Template and demo data](docs/phases/phase-03-template-and-demo-data.md) | 01 | 02, 05 | Done |
 | 04 | [Trip upload](docs/phases/phase-04-trip-upload.md) | 01, 02, 03 | 05 | Done |
 | 05 | [Clients and payments](docs/phases/phase-05-clients-and-payments.md) | 01, 02 | 03, 04 | Done |
-| 06 | [Reports](docs/phases/phase-06-reports.md) | 04, 05 | — | Not started |
+| 06 | [Reports](docs/phases/phase-06-reports.md) | 04, 05 | — | Done |
 | 07 | [Deployment and demo prep](docs/phases/phase-07-deployment-and-demo.md) | 01–06 | — | Not started |
 
 ```mermaid
@@ -199,3 +199,25 @@ Each phase appends a short entry here when done: what was built, deviations from
   - Deleting a payment restores the balance.
   - Clients: find, add (duplicate rejected), rename (duplicate rejected), list paging, "Внести оплату" from the card.
   - A View-only user is refused `/pay`, `/payments` and `/clients`.
+
+### Phase 06 — Reports
+
+- Built: `reports/data.py`, `reports/xlsx_builder.py`, `reports/pdf_builder.py`, `handlers/reports.py` (`/report`, `/debts`, `/trips`), `ReportStates` in `bot/states.py`, and trip query helpers in `services/trips.py` (`get_trip`, `list_recent_trips`, `trip_totals_from_model`).
+- **Fonts:** `DejaVuSans.ttf`, `DejaVuSans-Bold.ttf` and `LICENSE` in `src/sheepbot/reports/fonts/`, registered once in `pdf_builder.register_fonts()`.
+- **Report data (`reports/data.py`):**
+  - `statement_data(session, client_id, date_from=None, date_to=None) -> StatementData | None`: opening balance before `date_from` (0 for all time), chronological lines (shipments before payments on the same day, then by id), running balance, totals and closing balance.
+  - `trip_summary_data(session, trip_id) -> TripSummaryData | None`: uses `trips.trip_totals_from_model(trip)` (`TripTotals`) so revenue, cost, profit, margin and per-type cost/sale prices match the upload preview.
+  - `debtors_data(session) -> DebtorsData`: clients with non-zero balance sorted by balance descending, plus totals.
+  - `report_filename(title, subject, ext, on_date)` builds `<Title>_<subject>_<YYYY-MM-DD>.<pdf|xlsx>`.
+- **Builders:**
+  - `build_statement_xlsx`, `build_trip_summary_xlsx` (7 sheets: `Сводка`, `Себестоимость`, `Закуп`, `Расходы`, `Продажи по дням`, `Продажи по товарам`, `Продажи по клиентам`), `build_debtors_xlsx` with frozen headers, numeric/date formatting (`# ##0`, `# ##0.0`, `DD.MM.YYYY`), and `=SUM(...)` total formulas.
+  - `build_statement_pdf`, `build_trip_summary_pdf`, `build_debtors_pdf` in landscape A4 with DejaVu Sans, optional `COMPANY_NAME`, generation timestamp + user name, and two-pass `"Стр. N из M"` page numbering.
+- **Bot handlers (`handlers/reports.py`, `Perm.VIEW`, callback prefix `rep`):**
+  - `/report` / "Отчёты": statement (via `client_picker` → period preset or custom `ДД.ММ.ГГГГ – ДД.ММ.ГГГГ` → PDF/Excel), trip summary (last 10 trips → PDF/Excel), debtors (PDF/Excel).
+  - `/debts` / "Должники": top 30 debtors + total in chat with inline "Скачать Excel".
+  - `/trips` / "Рейсы": last 10 trips with revenue and profit, each with a button to download its summary as PDF or Excel.
+- Verified offline (data, builders, and fake updates through the dispatcher):
+  - Shared client statement across trips 101 and 102 matches `/clients` balance; period statement opening + movements = closing.
+  - Trip summary totals match upload preview for both demo trips.
+  - Debtors total matches sum of positive and negative balances.
+  - Upload-only user receives "Нет доступа к этой функции." on `/report`, `/debts`, `/trips`.

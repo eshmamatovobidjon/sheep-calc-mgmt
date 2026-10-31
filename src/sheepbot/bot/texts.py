@@ -199,3 +199,42 @@ STATUS_ICONS: dict[UserStatus, str] = {
     UserStatus.ACTIVE: "✅",
     UserStatus.BLOCKED: "⛔",
 }
+
+# Reports (/report, /debts, /trips)
+REPORTS_MENU = "<b>Отчёты</b>\nВыберите отчёт:"
+BTN_REPORT_STATEMENT = "Выписка по клиенту"
+BTN_REPORT_TRIP = "Итоги рейса"
+BTN_REPORT_DEBTORS = BTN_DEBTS
+
+REPORT_ASK_PERIOD = "Выберите период выписки:"
+BTN_PERIOD_ALL = "Всё время"
+BTN_PERIOD_THIS_MONTH = "Этот месяц"
+BTN_PERIOD_LAST_MONTH = "Прошлый месяц"
+BTN_PERIOD_CUSTOM = "Указать даты"
+REPORT_ASK_DATES = "Введите период в формате ДД.ММ.ГГГГ – ДД.ММ.ГГГГ:"
+REPORT_DATES_INVALID = (
+    "Неверный формат периода. Введите две даты: ДД.ММ.ГГГГ – ДД.ММ.ГГГГ, "
+    "например 01.10.2026 – 31.10.2026"
+)
+
+REPORT_ASK_TRIP = "Выберите рейс:"
+REPORT_ASK_FORMAT = "Выберите формат файла:"
+BTN_FORMAT_PDF = "PDF"
+BTN_FORMAT_EXCEL = "Excel"
+BTN_DOWNLOAD_EXCEL = "Скачать Excel"
+
+DEBTS_TITLE = "<b>Должники</b>"
+DEBTS_EMPTY = "Должников пока нет."
+DEBTS_LINE = "{name} — {balance}"
+DEBTS_MORE = "…и ещё {n} {word}"
+DEBTS_TOTAL = "Итого: <b>{total} сум</b>"
+
+TRIPS_TITLE = "<b>Рейсы</b>"
+TRIPS_EMPTY = "Рейсов пока нет."
+TRIP_BUTTON = "№{number} · {date}"
+TRIP_LINE = "№{number} · {date} · выручка {revenue} · прибыль {profit}"
+TRIP_NOT_FOUND = "Рейс не найден."
+
+FILE_TITLE_STATEMENT = "Выписка"
+FILE_TITLE_TRIP = "Рейс"
+FILE_TITLE_DEBTORS = BTN_DEBTS

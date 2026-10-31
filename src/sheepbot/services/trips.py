@@ -8,6 +8,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from sheepbot.config import get_settings
 from sheepbot.db.models import BotUser, Client, Expense, Product, Purchase, Sale, Trip, Upload
@@ -245,3 +246,77 @@ async def save_trip(
     set_upload_status(upload, UploadStatus.SAVED, parsed.number)
     await session.flush()
     return trip
+
+
+# --- trip queries ---
+
+
+@dataclass(frozen=True, slots=True)
+class TripOverview:
+    id: int
+    number: int
+    departure_date: date
+    totals: TripTotals
+
+
+def trip_totals_from_model(trip: Trip) -> TripTotals:
+    """Build TripTotals from a Trip ORM instance with loaded purchases, expenses and sales."""
+    purchases = (
+        PurchaseLine(
+            animal_type=p.animal_type,
+            heads=p.heads,
+            gross_kg=p.gross_kg,
+            net_kg=p.net_kg,
+            amount_kzt=p.amount_kzt,
+            amount_uzs=p.amount_uzs,
+        )
+        for p in trip.purchases
+    )
+    expenses_uzs = (e.amount_uzs for e in trip.expenses)
+    sales = (
+        SaleLine(
+            day=s.day,
+            client_key=s.client.name_key,
+            client_name=s.client.name,
+            product_code=s.product.code,
+            animal_type=s.product.animal_type,
+            heads=s.heads,
+            net_kg=s.net_kg,
+            amount_uzs=s.amount_uzs,
+        )
+        for s in trip.sales
+    )
+    return calc.trip_totals(purchases, expenses_uzs, sales)
+
+
+def _trip_load_options():
+    return (
+        selectinload(Trip.purchases),
+        selectinload(Trip.expenses),
+        selectinload(Trip.sales).selectinload(Sale.client),
+        selectinload(Trip.sales).selectinload(Sale.product),
+    )
+
+
+async def get_trip(session: AsyncSession, trip_id: int) -> Trip | None:
+    stmt = select(Trip).where(Trip.id == trip_id).options(*_trip_load_options())
+    return await session.scalar(stmt)
+
+
+async def list_recent_trips(session: AsyncSession, limit: int = 10) -> list[TripOverview]:
+    stmt = (
+        select(Trip)
+        .options(*_trip_load_options())
+        .order_by(Trip.departure_date.desc(), Trip.number.desc())
+        .limit(limit)
+    )
+    rows = await session.scalars(stmt)
+    return [
+        TripOverview(
+            id=t.id,
+            number=t.number,
+            departure_date=t.departure_date,
+            totals=trip_totals_from_model(t),
+        )
+        for t in rows
+    ]
